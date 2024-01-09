@@ -1,47 +1,19 @@
 #!/bin/bash
 
-directory="/"
-recursive=false
-
 directories_to_check=(/home /var/tmp /var/cache /var/log)
 
 exclude_list=(/proc /sys /run /dev /mnt /tmp)
 
-while [[ $# -gt 0 ]]; do
-	case $1 in
-		--sort)
-			sort_option=$2
-			shift
-			;;
-		--min-size)
-			min_size=$2
-			shift
-			;;
-		--recursive)
-			recursive=true
-			;;
-		--directory)
-			directory=$2
-			shift
-			;;
-		*)
-			echo "Unknown option: $1"
-			exit 1
-			;;
-	esac
-	shift
-done
-
 convert_to_mb() {
     size=$1
-    num=$(echo $size | sed 's/[A-Za-z]//g') # Extract number
-    unit=$(echo $size | sed 's/[0-9.]//g') # Extract unit
+    num=$(echo $size | sed 's/[A-Za-z]//g')
+    unit=$(echo $size | sed 's/[0-9.]//g')
 
     case $unit in
         K|k) num=$(echo "$num / 1024" | bc -l) ;;
         G|g) num=$(echo "$num * 1024" | bc -l) ;;
         T|t) num=$(echo "$num * 1048576" | bc -l) ;;
-        *) ;; # Assume MB if no unit
+        *) ;;
     esac
 
     echo "$num"
@@ -56,7 +28,6 @@ calculate_size() {
         return 1
     fi
 
-    # Run du without suppressing error messages
     size=$(du -sh "$dir" | awk '{print $1}')
 
     size_in_mb=$(convert_to_mb "$size")
