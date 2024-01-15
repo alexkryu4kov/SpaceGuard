@@ -1,8 +1,13 @@
 #!/bin/bash
 
+size_limit_mb=${1:-500}
+sort_output=${2: -false}
+
 directories_to_check=(/home /var/tmp /var/cache /var/log)
 
 exclude_list=(/proc /sys /run /dev /mnt /tmp)
+
+declare -A dir_sizes
 
 convert_to_mb() {
     size=$1
@@ -35,8 +40,8 @@ calculate_size() {
 
     if [ -z "$size" ]; then
         echo "Failed to calculate size for: $dir"
-    elif [ "$size_in_mb" -gt 500 ]; then 
-        echo "$dir $size"
+    elif [ "$size_in_mb" -gt "$size_limit_mb" ]; then 
+        dir_sizes["$dir"]="$size"
     fi
 }
 
@@ -67,6 +72,12 @@ is_blacklisted() {
     return 1 # not found in blacklist
 }
 
+print_sorted_sizes() {
+    for dir in "${!dir_sizes[@]}"; do
+        echo "$dir ${dir_sizes[$dir]}"
+    done | sort -hr -k2
+}
+
 total_dirs=${#directories_to_check[@]}
 current_dir=0
 
@@ -79,3 +90,11 @@ for dir in "${directories_to_check[@]}"; do
 	echo "Skipped blacklisted directory: $dir"
    fi
 done
+
+if [ "$sort_output" = true ]; then
+    print_sorted_sizes
+else
+    for dir in "${!dir_sizes[@]}"; do	
+        echo "$dir ${dir_sizes[$dir]}"
+    done
+fi
